@@ -1,0 +1,69 @@
+html
+	head
+		meta(charset="utf-8")
+		link(href="./css/estilos.css" rel="stylesheet")
+		link(href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet")
+		title Socket1.1
+	body
+		div(id="nickWrap")
+			p Nombre Usuario
+			p(id="nickError")
+			form(id="setNick")
+				input(id="nickname" size="35")
+				input(type="submit" value="goon")
+					
+		div(id="contentWrap")
+			div(id="chatWrap")
+				div(id="chat" class="chat")
+					form(id="send-message")
+						input(id="message"  size="35")
+						input(type="submit" value="enviar")
+			div(id="users")
+
+		script(src="https://code.jquery.com/jquery-2.1.1.min.js")
+		script(src="/socket.io/socket.io.js")
+		script.
+			jQuery(function($){
+			  var socket = io.connect();
+			  var $nickError = $('#nickError');
+			  var $nickForm = $('#setNick');
+			  var $nickBox = $('#nickname');
+			  var $users = $('#users');
+			  var $messageForm = $('#send-message');
+			  var $messageBox  = $('#message');
+			  var $chat = $('#chat');
+
+			  $nickForm.submit(function(e){
+			  		//document.getElementById('nickWrap').style.display = 'block';
+					e.preventDefault();
+					socket.emit('newuser', $nickBox.val(), function(data){
+						if(data){
+							$('#nickWrap').hide();
+							$('#contentWrap').show();
+						} else{
+							$nickError.html('Ese nombre ya esta en uso.');
+						}
+					});
+					$nickBox.val('');
+			  });
+
+			  socket.on('usernames', function(data){
+				var html ='';
+				for(i=0; i < data.length ; i++){
+					html += data[i] + '<br/>'
+				}
+				$users.html(html);
+			  });
+
+			  $messageForm.submit(function(e){
+			  e.preventDefault();
+
+			  socket.emit('send message', $messageBox.val());
+			  $messageBox.val('');
+			  });
+
+			  socket.on('new message', function(data){
+			  $chat.append('<b>' + data.nick + '</b> ' + data.msg + "<br/>");
+			  });
+			  });
+
