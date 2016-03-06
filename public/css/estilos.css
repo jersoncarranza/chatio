@@ -9,3 +9,12 @@
 	border:  1px #000 solid;
 	float: left;
 }
+
+.error{
+	color: red;
+}
+
+.whisper{
+	color: gray;
+	font-style: italic;
+}
