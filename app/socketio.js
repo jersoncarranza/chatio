@@ -1,20 +1,42 @@
 var Io = require('socket.io');
 var users = {};
 
+var mongoose= require('mongoose');
+
+mongoose.connect('mongodb://la:l@ds064628.mlab.com:64628/chatio', function (err) {
+	if (err) {
+		console.log(err);
+	}else{
+		console.log('succefull conectada');
+	}
+});
+
+var chatSchema = mongoose.Schema({
+	//name:(first:String , last: String),
+	nick:String,
+	msg:String,
+	created: {type:Date, default:Date.now}
+});
+
+var Chat = mongoose.model('Message', chatSchema);
+
 
 var SocketIO = function(config){
 	config = config || {};
 	var io = Io.listen(config.server);
 	console.log("socket.io");
-	//vamos crear un canal
 
 	io.sockets.on('connection', function (socket){
 
-		socket.emit('mejorando.la', {hola:'soy el servidor'});
+		var query = Chat.find({});
+		query.sort('-created').limit(8).exec(function(err, docs){
+			if(err) throw err;
+			console.log('Enviando mensaje viejos!');
+			socket.emit('load', docs);
+		});
 
 		socket.on('newuser', function (data, callback) {
 		console.log("el nuevo usuario", data);
-		
 		if(data in users){
 			callback(false);
 		}
@@ -47,9 +69,15 @@ var SocketIO = function(config){
 				callback.log('Error: Please enter a message for your whisper');
 			}
 		}else{
-			io.sockets.emit('new message',{ msg: msg , nick: socket.nickname });
+			var newMsg =  new Chat({ msg: msg , nick:socket.nickname});
+			newMsg.save(function (err){
+				if (err) throw err;
+				io.sockets.emit('new message',{ msg: msg , nick: socket.nickname });
+				});
 			}
 		});
+
+	
 
 		socket.on('disconnect', function(data){
 		if(!socket.nickname) return;
